@@ -12,10 +12,21 @@ typedef struct{
 double total_grade=0;
 double total_bellcurve=0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_barrier_t barrier;
+student grades[NUM_THREADS];
 
 void *read_grades(){
+  printf("Reading grades\n");
   FILE *file=fopen("grades.txt","r");
-
+  char* line;
+  int i=0;
+  while(scanf(file,line)!=EOF){
+    //grades[i].grade=stoi(line);
+    printf("%f\n", atof(line));
+    grades[i].grade=atof(line);
+    //printf("%f\n", atof(line));
+  }
+  pthread_exit(NULL);
 }
 
 void *save_bellcurve(void *arg){
@@ -35,23 +46,31 @@ void *save_bellcurve(void *arg){
 
 int main(void){
   pthread_t threads[NUM_THREADS];
-  student grades[NUM_THREADS];
-  int rc,grade;
-  for(int i=0;i<NUM_THREADS;i++){
-    printf("Enter grade #%d: ", i+1);
-    scanf("%d", &grade);
-    grades[i]=grade;
+  //student grades[NUM_THREADS];
+  pthread_t read_thread;
+  int rc;
+  //printf("Reading grades\n");
+  rc=pthread_create(&read_thread,NULL,read_grades,NULL);
+  //pthread_join(read_thread,NULL);
+  pthread_barrier_wait(&barrier);
+  printf("Reading done\n");
 
-  }
   for(int i=0;i<NUM_THREADS;i++){
-    bell_curve_grade *arg=malloc(sizeof *arg);
-    arg->grade=grades[i];
-    rc=pthread_create(&threads[i],NULL,bell_curve,arg);
+    student *arg=malloc(sizeof *arg);
+    arg->grade=grades[i].grade;
+    pthread_mutex_lock(&mutex);
+    rc=pthread_create(&threads[i],NULL,save_bellcurve,arg);
 
     if(rc){
       exit(-1);
     }
+    pthread_mutex_lock(&mutex);
+    pthread_join(threads[i],NULL);
   }
+  double average_before=total_grade/NUM_THREADS;
+  double average_after=total_bellcurve/NUM_THREADS;
+  printf("Average before bellcurve: %f\n", average_before);
+  printf("Average after bellcurve: %f\n", average_after);
   pthread_exit(NULL);
 
   return 0;

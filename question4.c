@@ -16,9 +16,9 @@ void *class_total(void *arg){
   student *data=arg;
 
   pthread_mutex_lock(&mutex);
-  printf("%d + %d = ", total_grade,data->grade);
+  //printf("%d + %d = ", total_grade,data->grade);
   total_grade += data->grade;
-  printf("%d\n", total_grade);
+  //printf("%d\n", total_grade);
   pthread_mutex_unlock(&mutex);
   pthread_exit(NULL);
 }
@@ -41,16 +41,15 @@ int main(void){
 
     pthread_mutex_lock(&mutex);
     rc=pthread_create(&threads[i],NULL,class_total,arg);
-    //printf("%d\n", total_grade);
+
     if(rc){
       exit(-1);
     }
     pthread_mutex_unlock(&mutex);
+    pthread_join(threads[i],NULL);
 
-    pthread_mutex_lock(&mutex);
-    printf("%d\n", total_grade);
-    pthread_mutex_unlock(&mutex);
   }
+  printf("Sum: %d\n", total_grade);
   pthread_exit(NULL);
 
   return 0;
